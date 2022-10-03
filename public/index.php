@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="style.css">
     <?php
         header("refresh: 1000;");
+        header('Content-type: text/html; charset=utf-8');
     ?>
     <title>Document</title>
 </head>
@@ -14,7 +15,7 @@
         include_once('../Database/Connection.class.php');
         include_once('../Database/ManageTable.class.php');
         include_once('../Model/Book.class.php');
-
+        $_POST = array();
         try{
             $pdo = Connection::get()->connect();
             $manageTables = new ManageTable($pdo);
@@ -67,16 +68,11 @@
             if(empty($_POST['input']))
             {
                 $books = $manageTables->getBooks();
-                /* foreach($books as $row)
-                {
-                    echo $row['nameauthor'].'-'.$row['namebook'].'<br />';
-                }   */
             }else
             {
                 $input = $_POST['input'];
                 $books = $manageTables->getBooks($input);
             }
-            //echo 'A connection to PostgreSQL database server has been established successfully.';
         }catch(\PDOException $e)
         {
             echo $e->getMessage();
@@ -155,7 +151,7 @@
                         <div class="row">
                             <?php
                                 if(empty($row['namebook'])){
-                                    echo htmlspecialchars("<none> (no books found)");
+                                    echo htmlspecialchars("<none> (no booksé found)");
                                 }else{
                                     echo $row['namebook'];
                                 }
