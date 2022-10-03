@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta http-equiv="Content-type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
     <?php
-        header("refresh: 50;");
+        header("refresh: 1000;");
     ?>
     <title>Document</title>
 </head>
@@ -18,6 +18,52 @@
         try{
             $pdo = Connection::get()->connect();
             $manageTables = new ManageTable($pdo);
+            //$manageTables->insertAuthor("wambi");
+            //$manageTables->dropTables();
+            if(empty($_POST['submit']))
+            {
+            }else
+            {
+                if(empty($_POST['input'])){
+                    $file = $_FILES['fileUpload'];
+
+                    $fileName = $_FILES['fileUpload']['name'];
+                    $fileTmpName = $_FILES['fileUpload']['tmp_name'];
+                    $fileSize = $_FILES['fileUpload']['size'];
+                    $fileError = $_FILES['fileUpload']['error'];
+                    $fileType = $_FILES['fileUpload']['type'];
+
+                    $fileExt = explode('.',$fileName);
+                    $fileActualExt = strtolower(end($fileExt));
+
+                    $allowed = array('xml');
+
+                    //check if file has .xml extension
+                    if (in_array($fileActualExt, $allowed)) {
+                        
+                        if ($fileError === 0) {
+
+                            //check if file is less than 500Mb we can upload xml file
+                            if($fileSize < 500000){
+                                $fileNameNew = uniqid("",true).".".$fileActualExt;
+                                $fileDestination = '../XML/'.$fileNameNew;
+                                move_uploaded_file($fileTmpName,$fileDestination);
+                                $recordBook = new Book($pdo);
+                                $recordBook->recordBook($fileDestination);
+                                header("Location: #?uploadsuccess");
+                            }else{
+                                echo "<div class='message'>your file is too big!</div>";
+                            }
+                        }else{
+                            echo "<div class='message'> there was an error uploading your file !</div>";
+                        }
+
+                    }else{
+                        echo "<div class='message'> you cannot upload files of this type !</div>";
+                    }    
+                }
+                
+            }
             if(empty($_POST['input']))
             {
                 $books = $manageTables->getBooks();
@@ -41,11 +87,10 @@
             <center> Book Listing</center>
         </h2>
         <div>
-            <form action="#" method="POST">
-                <div class="search-form">
-                    <input type="text" name="input" id="input" placeholder="search by author">
-                    <input class="submit" type="submit" value="submit">
-                </div>
+            <form action="#" method="POST" enctype="multipart/form-data">
+                    <input type="file" name="fileUpload" id="fileUpload" accept=".xml" />
+                    <input type="text" name="input" id="text" placeholder="search by author">
+                    <input class="submit" name="submit" type="submit" value="submit">
             </form>
         </div>
         <div id="row">
@@ -94,17 +139,16 @@
                         $author = $manageTables->getAuthorByName($row['nameauthor']);
                         echo "testing".$author['nameauthor'];
                     }else{ */
-                        $author = $manageTables->getAuthorById($row['author_id']);
                     //}
             ?>
                 <div class="animation">
                     <div class="table">
                         <div class="row">
                             <?php
-                                if(empty($author['nameauthor'])){
+                                if(empty($row['nameauthor'])){
                                     echo htmlspecialchars("<none>(no author found)");
                                 }else{
-                                    echo $author['nameauthor'];
+                                    echo $row['nameauthor'];
                                 }
                             ?>
                         </div>

@@ -11,11 +11,6 @@ class ManageTable
 
     public function createTables() {
         $sqlList = [
-                    "CREATE TABLE IF NOT EXISTS locationFolders(
-                        id serial PRIMARY KEY,
-                        nameurl text NOT NULL UNIQUE
-
-                    );",
                     "CREATE TABLE IF NOT EXISTS authors (
                         id serial PRIMARY KEY,
                         nameAuthor varchar(255) NOT NULL UNIQUE
@@ -24,8 +19,7 @@ class ManageTable
                     "CREATE TABLE IF NOT EXISTS books (
                         id serial PRIMARY KEY,
                         author_id integer NOT NULL references authors(id),
-                        locationfolder_id integer NOT NULL references locationFolders(id),
-                        nameBook varchar(255) NOT NULL UNIQUE 
+                        nameBook varchar(255)  UNIQUE 
                      );"
             ];
 
@@ -38,7 +32,7 @@ class ManageTable
         return $this;
     }
     public function dropTables() {
-        $sql = "DROP TABLE IF EXISTS books, authors, locationFolders;";
+        $sql = "DROP TABLE IF EXISTS books, authors, locationfolders";
         echo $sql."<br />";
         // execute each sql statement to create new tables
         $this->pdo->exec($sql);
@@ -46,57 +40,23 @@ class ManageTable
         return $this;
     }
 
-    public function insertData($locationFolder_id,$data)
+    public function insertData($data)
     {
-        $author = $this->insertAuthor($data->author);
-        print $author['id']."<br />";
-        $this->insertBook($data->name,$author['id'],$locationFolder_id);
-    }
-
-    /**
-     * insert a new row into the locationFolders table
-     * @param type $nameurl
-     * @return the id of the inserted row
-     */
-    public function insertLocationFolder($nameurl) {
-        // prepare statement for insert
-        $sql = 'INSERT INTO locationFolders(nameurl) VALUES(:nameurl)';
-        $stmt = $this->pdo->prepare($sql);
-
-        // pass values to the statement
-        $stmt->bindValue(':nameurl', $nameurl);
-        echo $sql."<br />";
-
-        try{
-            // execute the insert statement
-            $stmt->execute();
-        }catch(\Exception $e){
-            if(strpos($e, "SQLSTATE[23505]")){
-                return $this->getLocationFolderByName($nameurl);
-             }else{
-                 throw $e;
-             }
-        }        
-        echo $sql."<br />";
-
-        // return generated id
-        return $this->pdo->lastInsertId('locationFolders_id_seq');
-    }
-    public function getLocationFolderByName($locationFolder){
-        // prepare statement for insert
-        $sql = "SELECT * FROM locationfolders WHERE nameurl = '".$locationFolder."' LIMIT 1";
-
-        try{
-           foreach($this->pdo->query($sql) as $row)
-           {
-               return $row;
-           }
-        }catch(\Exception $e)
-        {
-           throw $e;
+        $this->createTables();
+        // check if author is not null
+        if(empty($data->author)){
+            $author = $this->insertAuthor("");
+        }else{
+            $author = $this->insertAuthor($data->author);
         }
+        // check if author is not null
+        if(empty($data->name)){
+            $this->insertBook("",$author);
+        }else{
+            $this->insertBook($data->name,$author);
+        }
+    }
 
-   }
     /**
      * insert a new row into the authors table
      * @param type $name
@@ -108,13 +68,13 @@ class ManageTable
         $stmt = $this->pdo->prepare($sql);
         // pass values to the statement
         $stmt->bindValue(':name', $name);
-        
         try{
             // execute the insert statement
             $stmt->execute();
         }catch(\Exception $e){
             if(strpos($e, "SQLSTATE[23505]")){
-               return $this->getAuthorByName($name);
+                $row = $this->getAuthorByName($name);
+               return $row['id'];
             }else{
                 throw $e;
             }
@@ -125,13 +85,15 @@ class ManageTable
     }
 
     public function getAuthorByName($nameAuthor){
+        $this->createTables();
          // prepare statement for insert
          $sql = "SELECT * FROM authors WHERE nameauthor = '".$nameAuthor."' LIMIT 1";
 
          try{
             foreach($this->pdo->query($sql) as $row)
-            {
+            {   
                 return $row;
+
             }
          }catch(\Exception $e)
          {
@@ -140,6 +102,7 @@ class ManageTable
 
     }
     public function getAuthorById($id){
+        $this->createTables();
          // prepare statement for insert
          $sql = "SELECT * FROM authors WHERE id = '".$id."' LIMIT 1";
 
@@ -168,10 +131,18 @@ class ManageTable
 
     }
     public function getBooks($authorName=null){
+        $this->createTables();
          // prepare statement for insert
          if(empty($authorName))
          {
-            $sql = "SELECT * FROM books ";
+            $sql = "SELECT 
+                        nameauthor,
+                        namebook 
+                    FROM authors 
+                    LEFT JOIN books 
+                    ON books.author_id = authors.id
+                    LIMIT 30;
+                    ";
 
             try{
                 $books = $this->pdo->query($sql);
@@ -203,29 +174,50 @@ class ManageTable
          }
 
     }
+    public function alterChangeBookAuthorId($name,$author_id) {
+        $this->createTables();
+        // prepare statement for insert
+        $sql = "UPDATE books SET author_id = ".$author_id." WHERE namebook = '".$name."';";
+        $stmt = $this->pdo->prepare($sql);    
+        try{
+            // execute the insert statement
+            $stmt->execute();
+        }catch(\Exception $e){
+            ///die($e);
+            if(strpos($e, "SQLSTATE[23505]")){
+                return ;
+             }else{
+                 throw $e;
+             }
+        }        
+        echo $sql."<br />";
+        // return generated id
+        return $this->pdo->lastInsertId('authors_id_seq');
+    }
 
     /**
-     * insert a new row into the authors table
-     * @param type $name
+     * insert a new row into the Book table
+     * @param type $name ,$author_id
      * @return the id of the inserted row
      */
-    public function insertBook($name,$author_id,$locationfolder_id) {
+    public function insertBook($name,$author_id) {
+        $this->createTables();
         // prepare statement for insert
-        $sql = 'INSERT INTO books(nameBook,author_id,locationfolder_id) VALUES(:names,:author_id,:locationfolder_id)';
+        $sql = 'INSERT INTO books(nameBook,author_id) VALUES(:names,:author_id)';
         //die($sql);
         $stmt = $this->pdo->prepare($sql);
         // pass values to the statement
         $stmt->bindValue(':names', $name);
         $stmt->bindValue(':author_id', $author_id);
-        $stmt->bindValue(':locationfolder_id', $locationfolder_id);
         echo $sql."<br />";
         
         try{
             // execute the insert statement
             $stmt->execute();
         }catch(\Exception $e){
+           // die("test");
             if(strpos($e, "SQLSTATE[23505]")){
-                return ;
+                return $this->alterChangeBookAuthorId($name,$author_id);
              }else{
                  throw $e;
              }

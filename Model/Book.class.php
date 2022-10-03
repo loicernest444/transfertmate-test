@@ -13,7 +13,7 @@ include_once('../Database/ManageTable.class.php');
 
         public function __construct($pdo=null)
         {
-           /*  $this->id = $id;
+            /* $this->id = $id;
             $this->author = $author;
             $this->name = $name; */
             $this->manageTable = new ManageTable($pdo);
@@ -62,14 +62,14 @@ include_once('../Database/ManageTable.class.php');
             print_r($arrays);
             return $arrays;
         }
-        public function recordBook()
+        public function recordBook($fileName=null)
         {
             $this->manageTable->createTables();
-            $xml = simplexml_load_file('../XML/book.xml');
-            $location = $this->manageTable->insertLocationFolder('../XML/book.xml');
+            $xml = simplexml_load_file($fileName);
+            //$location = $this->manageTable->insertLocationFolder('../XML/book.xml');
             for($i=0; $i<sizeof($xml); $i++){
                 echo "compteur ".$i." <br />";
-                $this->manageTable->insertData($location['id'],$xml->book[$i]);
+                $this->manageTable->insertData($xml->book[$i]);
             }
         }
     }

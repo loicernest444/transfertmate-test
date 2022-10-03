@@ -40,6 +40,13 @@
     display: flex;
     justify-content: center;
 }
+.file-form
+{
+    width: 70%;
+    margin: auto;
+    display: flex;
+    justify-content: center;
+}
 .submit:hover
 {
     cursor: pointer;
